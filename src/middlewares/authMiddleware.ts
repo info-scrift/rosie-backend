@@ -1,0 +1,45 @@
+import { NextFunction, Request, Response } from 'express';
+import { supabaseAuth } from '../config/supabaseclient';
+
+// Extend Express Request
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    console.log('[AuthMiddleware] Authorization Header:', authHeader);
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('[AuthMiddleware] Missing or invalid Bearer token format');
+      return res.status(401).json({ message: 'Authorization header missing or invalid' });
+    }
+
+    const token = authHeader.replace('Bearer ', '').trim();
+    console.log('[AuthMiddleware] Extracted Token:', token);
+
+    const { data, error } = await supabaseAuth.auth.getUser(token);
+
+    if (error) {
+      console.error('[AuthMiddleware] Supabase auth.getUser error:', error);
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    if (!data?.user) {
+      console.warn('[AuthMiddleware] No user returned from Supabase');
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    console.log('[AuthMiddleware] Authenticated User:', data.user);
+    req.user = data.user;
+    next();
+  } catch (err: any) {
+    console.error('[AuthMiddleware] Unexpected error:', err.message);
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+};
