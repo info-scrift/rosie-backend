@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
     "dev": "ts-node src/index.ts",
     "debug": "node --inspect -r ts-node/register src/index.ts",
     "debug:break": "node --inspect-brk -r ts-node/register src/index.ts",

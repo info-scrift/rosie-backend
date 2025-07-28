@@ -87,7 +87,7 @@ export const updateApplicantProfile = async (
     updates: Partial<CreateProfileData>
 ) => {
     const { data, error } = await supabase
-        .from('applicant_profiles') // ✅
+        .from('applicant_profiles')
         .update(updates)
         .eq('id', userId)
         .select()
@@ -99,7 +99,7 @@ export const updateApplicantProfile = async (
 
 export const deleteApplicantProfile = async (userId: string) => {
     const { error } = await supabase
-        .from('applicant_profiles') // ✅
+        .from('applicant_profiles')
         .delete()
         .eq('id', userId);
 
