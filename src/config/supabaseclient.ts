@@ -23,3 +23,9 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Anon client for auth operations
 export const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+
+
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY! // Must be the secret key
+);

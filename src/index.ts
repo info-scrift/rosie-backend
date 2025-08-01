@@ -4,6 +4,8 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import applicantRoutes from './routes/applicant';
 import authRoutes from './routes/authRoutes';
+import companyRoutes from './routes/companyRoutes';
+
 dotenv.config();
 console.log('[DEBUG] ENV Loaded:', {
   SUPABASE_URL: process.env.SUPABASE_URL,
@@ -18,6 +20,7 @@ app.get('/', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/applicant', applicantRoutes);
+app.use('/api/company', companyRoutes)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

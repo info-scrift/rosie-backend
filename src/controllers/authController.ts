@@ -1,6 +1,119 @@
 import { Request, Response } from 'express';
 import { LoginCredentials } from '../models/User';
-import { loginService, signupService } from '../services/authService';
+import { loginService, registerCompanyService, signupService } from '../services/authService';
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new company account
+ *     tags: [Auth]
+ *     description: Creates a new Supabase auth user, saves the company profile, and returns the access token.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - company_name
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: company@example.com
+ *               password:
+ *                 type: string
+ *                 example: SecurePass123
+ *               company_name:
+ *                 type: string
+ *                 example: Acme Inc.
+ *               industry:
+ *                 type: string
+ *                 example: Software
+ *               company_size:
+ *                 type: string
+ *                 example: 51-200
+ *               website:
+ *                 type: string
+ *                 example: https://www.acme.com
+ *               description:
+ *                 type: string
+ *                 example: We build scalable tech solutions.
+ *               contact_person:
+ *                 type: string
+ *                 example: Jane Doe
+ *               phone:
+ *                 type: string
+ *                 example: "+1-800-123-4567"
+ *               address:
+ *                 type: string
+ *                 example: 123 Acme St, San Francisco, CA
+ *     responses:
+ *       201:
+ *         description: Company registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user_id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 access_token:
+ *                   type: string
+ *                 companyProfile:
+ *                   type: object
+ *       400:
+ *         description: Missing or invalid input
+ */
+
+export const registerCompany = async (req: Request, res: Response) => {
+  const {
+    email,
+    password,
+    company_name,
+    industry,
+    company_size,
+    website,
+    description,
+    contact_person,
+    phone,
+    address
+  } = req.body;
+
+  if (!email || !password || !company_name) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    const { user, session, companyProfile } = await registerCompanyService(email, password, {
+      company_name,
+      industry,
+      company_size,
+      website,
+      description,
+      contact_person,
+      phone,
+      address
+    });
+
+    res.status(201).json({
+      message: 'Company registered successfully',
+      user_id: user.id,
+      email: user.email,
+      access_token: session?.access_token,
+      companyProfile
+    });
+  } catch (error: any) {
+    res.status(400).json({ message: error.message || 'Company registration failed' });
+  }
+};
+
 /**
  * @swagger
  * /api/auth/signup:
