@@ -100,6 +100,9 @@ import {
  *               description:
  *                 type: string
  *                 example: "Responsible for developing UI using React"
+ *              job_types:
+ *                 type:string
+ *                   example: "Full-time"
  *     responses:
  *       201:
  *         description: Job created

@@ -210,6 +210,7 @@ export const readApplicantProfile = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
+
     try {
         const profile = await getApplicantProfile(userId);
         res.status(200).json({ profile });

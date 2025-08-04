@@ -5,6 +5,7 @@ import { swaggerSpec } from './config/swagger';
 import applicantRoutes from './routes/applicant';
 import authRoutes from './routes/authRoutes';
 import companyRoutes from './routes/companyRoutes';
+import publicRoutes from './routes/publicRoutes';
 
 dotenv.config();
 console.log('[DEBUG] ENV Loaded:', {
@@ -21,6 +22,7 @@ app.get('/', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/applicant', applicantRoutes);
 app.use('/api/company', companyRoutes)
+app.use('/api/jobs', publicRoutes)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
