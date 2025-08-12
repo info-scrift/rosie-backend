@@ -264,15 +264,16 @@ export const login = async (req: Request, res: Response) => {
 
 
     // Optionally: redirect URL (return instead of redirect directly)
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173/dashboard';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
 
     res.status(200).json({
       message: 'Login successful',
       access_token: session.access_token,
       refresh_token: session.refresh_token,
       user,
-      redirect: `${frontendUrl}?token=${session.access_token}`
+      redirect: `${frontendUrl}`
     });
+    console.log(user)
   } catch (error: any) {
     console.error('Login error:', error);
     res.status(401).json({ message: error.message || 'Login failed' });

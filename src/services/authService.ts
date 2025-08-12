@@ -8,8 +8,15 @@ export interface SignupResponse {
 }
 
 export interface LoginResponse {
-  user: any;
-  session: any;
+  user: {
+    email: string;
+    role: string;
+  };
+  session: {
+    access_token: string;
+    refresh_token: string;
+    // any other fields 
+  };
 }
 
 export const registerCompanyService = async (
@@ -116,7 +123,26 @@ export const signupService = async (
 };
 
 
-export const loginService = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+// export const loginService = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+//   const { email, password } = credentials;
+
+//   const { data, error } = await supabaseAuth.auth.signInWithPassword({
+//     email,
+//     password,
+//   });
+
+//   if (error) throw error;
+
+//   return {
+//     user: data.user,
+//     session: data.session,
+//   };
+// };
+
+
+export const loginService = async (
+  credentials: LoginCredentials
+): Promise<LoginResponse> => {
   const { email, password } = credentials;
 
   const { data, error } = await supabaseAuth.auth.signInWithPassword({
@@ -126,8 +152,25 @@ export const loginService = async (credentials: LoginCredentials): Promise<Login
 
   if (error) throw error;
 
+  const { user, session } = data;
+
+  if (!user || !session) {
+    throw new Error('Invalid login response');
+  }
+
+  // Fetch user profile from the `profiles` table
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('email, role')
+    .eq('user_id', user.id)
+    .single();
+
+  if (profileError) {
+    throw new Error('Failed to fetch user profile: ' + profileError.message);
+  }
+
   return {
-    user: data.user,
-    session: data.session,
+    user: profile, // custom profile, not the raw auth user
+    session,
   };
 };

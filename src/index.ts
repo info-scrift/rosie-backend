@@ -1,3 +1,4 @@
+import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
@@ -6,7 +7,6 @@ import applicantRoutes from './routes/applicant';
 import authRoutes from './routes/authRoutes';
 import companyRoutes from './routes/companyRoutes';
 import publicRoutes from './routes/publicRoutes';
-
 dotenv.config();
 console.log('[DEBUG] ENV Loaded:', {
   SUPABASE_URL: process.env.SUPABASE_URL,
@@ -14,7 +14,10 @@ console.log('[DEBUG] ENV Loaded:', {
 });
 const app = express();
 app.use(express.json());
-
+app.use(cors({
+  origin: 'http://localhost:8080', // or use '*' for all origins (not recommended for production)
+  credentials: true
+}));
 app.get('/', (_req, res) => {
   res.redirect('/api-docs');
 });
