@@ -24,7 +24,8 @@ app.use(cors({ origin: origin, credentials: true }))
 
 app.use(express.json());
 app.use(cors({
-  origin: ["https://rosie-frontend.vercel.app",
+  origin: [
+    "https://bluebridgecorporation.vercel.app",
     "http://localhost:8080",
   ],
   credentials: true
