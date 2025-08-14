@@ -24,7 +24,9 @@ app.use(cors({ origin: origin, credentials: true }))
 
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:8080', // or use '*' for all origins (not recommended for production)
+  origin: ["https://rosie-frontend.vercel.app",
+    "http://localhost:8080",
+  ],
   credentials: true
 }));
 app.get('/', (_req, res) => {
