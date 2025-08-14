@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { LoginCredentials } from '../models/User';
 import { loginService, registerCompanyService, signupService } from '../services/authService';
+import { getOriginUrl } from '../utils/getURL';
 /**
  * @swagger
  * /api/auth/register:
@@ -264,7 +265,7 @@ export const login = async (req: Request, res: Response) => {
 
 
     // Optionally: redirect URL (return instead of redirect directly)
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+    const frontendUrl = getOriginUrl();
 
     res.status(200).json({
       message: 'Login successful',
