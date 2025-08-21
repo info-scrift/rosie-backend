@@ -26,7 +26,7 @@ export interface CreateProfileData {
   website?: string;
   location?: string;
   role?: string;
-  resume_url?: string;
+  resume_url?: string | null;
   skills?: string[];
 
 } 

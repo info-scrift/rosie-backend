@@ -1,5 +1,6 @@
 
 import { Request, Response } from 'express';
+import { supabase } from '../config/supabaseclient';
 import {
     createApplicantProfile,
     deleteApplicantProfile,
@@ -47,38 +48,103 @@ import {
  *       500:
  *         description: Upload failed or server error
  */
+// export const submitApplicantProfile = async (req: Request, res: Response) => {
+//     try {
+//         const userId = req.user?.id;
+//         if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+//         const resume = req.file;
+//         if (!resume) {
+//             return res.status(400).json({ message: 'Resume file is required (PDF).' });
+//         }
+
+//         // ✅ Fetch existing profile
+//         const profile = await getApplicantProfile(userId);
+
+//         // ✅ Upload using profile info
+//         const resumeUrl = await uploadApplicantResume({
+//             userId,
+//             profileId: profile.id, // fetched from DB
+//             resumeFile: resume,
+//             firstName: profile.first_name,
+//             lastName: profile.last_name
+//         });
+
+//         // ✅ Update resume_url in DB
+//         const updatedProfile = await updateApplicantProfile(userId, { resume_url: resumeUrl });
+
+//         res.status(200).json({
+//             message: 'Resume uploaded and profile updated successfully',
+//             resume_url: resumeUrl,
+//             profile: updatedProfile
+//         });
+//     } catch (error: any) {
+//         res.status(500).json({ message: error.message || 'Something went wrong' });
+//     }
+// };
 export const submitApplicantProfile = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
-        if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+        if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
         const resume = req.file;
         if (!resume) {
-            return res.status(400).json({ message: 'Resume file is required (PDF).' });
+            return res.status(400).json({ message: "Resume file is required (PDF)." });
         }
 
-        // ✅ Fetch existing profile
+        // Fetch existing profile (must include: id, first_name, last_name, resume_url)
         const profile = await getApplicantProfile(userId);
 
-        // ✅ Upload using profile info
+        // If an old resume exists, delete it from storage and clear DB column
+        if (profile.resume_url) {
+            const oldPath = extractStoragePathFromPublicUrl(profile.resume_url);
+            if (oldPath) {
+                const { error: removeErr } = await supabase.storage
+                    .from("resumes")
+                    .remove([oldPath]);
+                if (removeErr) {
+                    console.warn("Could not remove old resume:", removeErr.message);
+                }
+            }
+            await updateApplicantProfile(profile.id, { resume_url: null });
+        }
+
+        // Upload new resume (unique filename; no id in name)
         const resumeUrl = await uploadApplicantResume({
             userId,
-            profileId: profile.id, // fetched from DB
+            profileId: profile.id,
             resumeFile: resume,
             firstName: profile.first_name,
-            lastName: profile.last_name
+            lastName: profile.last_name,
         });
 
-        // ✅ Update resume_url in DB
-        const updatedProfile = await updateApplicantProfile(userId, { resume_url: resumeUrl });
+        // Save fresh URL
+        const updatedProfile = await updateApplicantProfile(profile.id, { resume_url: resumeUrl });
 
         res.status(200).json({
-            message: 'Resume uploaded and profile updated successfully',
+            message: "Resume uploaded and profile updated successfully",
             resume_url: resumeUrl,
-            profile: updatedProfile
+            profile: updatedProfile,
         });
     } catch (error: any) {
-        res.status(500).json({ message: error.message || 'Something went wrong' });
+        console.error("submitApplicantProfile error:", error);
+        res.status(500).json({ message: error.message || "Something went wrong" });
+    }
+};
+
+
+// Helper: convert Supabase public URL -> storage key for .remove([key])
+// Works with: /storage/v1/object/public/resumes/resumes/<filename>.pdf
+const extractStoragePathFromPublicUrl = (publicUrl: string): string | null => {
+    try {
+        const u = new URL(publicUrl);
+        const marker = "/storage/v1/object/public/resumes/";
+        const idx = u.pathname.indexOf(marker);
+        if (idx === -1) return null;
+        // -> "resumes/<filename>.pdf"
+        return decodeURIComponent(u.pathname.substring(idx + marker.length));
+    } catch {
+        return null;
     }
 };
 
@@ -209,7 +275,7 @@ export const createApplicantProfileHandler = async (req: Request, res: Response)
 export const readApplicantProfile = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-
+    console.log(userId)
 
     try {
         const profile = await getApplicantProfile(userId);

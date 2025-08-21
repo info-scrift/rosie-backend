@@ -18,10 +18,9 @@ export const createApplicantProfile = async (
 
     return data[0];
 };
-
 export const uploadApplicantResume = async ({
-    userId,
-    profileId,
+    userId,        // kept for signature consistency (unused here)
+    profileId,     // kept for signature consistency (unused here)
     resumeFile,
     firstName,
     lastName,
@@ -32,38 +31,50 @@ export const uploadApplicantResume = async ({
     firstName: string;
     lastName: string;
 }): Promise<string> => {
-    if (!resumeFile?.buffer) {
-        throw new Error('No file buffer found for resume upload');
-    }
+    if (!resumeFile?.buffer) throw new Error("No file buffer found for resume upload");
+    if (resumeFile.mimetype !== "application/pdf") throw new Error("Only PDF resumes are allowed");
 
-    const sanitizedFirstName = (firstName || 'user').replace(/[^a-zA-Z0-9]/g, '');
-    const sanitizedLastName = (lastName || 'unknown').replace(/[^a-zA-Z0-9]/g, '');
-    const sanitizedId = (profileId || 'noid').toString().replace(/[^a-zA-Z0-9]/g, '');
+    const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+    if (resumeFile.size > MAX_BYTES) throw new Error("Resume exceeds 10MB limit");
 
-    const newFileName = `${sanitizedFirstName}_${sanitizedLastName}_${sanitizedId}.pdf`;
+    const sanitize = (s: string) =>
+        (s || "")
+            .replace(/[^a-zA-Z0-9]+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "") || "user";
+
+    const sf = sanitize(firstName);
+    const sl = sanitize(lastName);
+
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const now = new Date();
+    const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(
+        now.getHours()
+    )}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const rand = Math.random().toString(36).slice(-6);
+
+    // Keep your bucket 'resumes' and folder 'resumes/'
+    const newFileName = `${sf}-${sl}-${ts}-${rand}.pdf`;
     const filePath = `resumes/${newFileName}`;
 
-    console.log(`Uploading resume to: ${filePath}`);
-
-    // Upload file
     const { error: uploadError } = await supabase.storage
-        .from('resumes')
+        .from("resumes")
         .upload(filePath, resumeFile.buffer, {
-            contentType: resumeFile.mimetype,
-            upsert: true,
+            contentType: "application/pdf",
+            upsert: true, // fine even though we remove old before
         });
 
     if (uploadError) {
-        console.error('Resume upload failed:', uploadError.message);
-        throw new Error('Failed to upload resume');
+        console.error("Resume upload failed:", uploadError.message);
+        throw new Error("Failed to upload resume");
     }
 
     const { data: publicUrlData } = supabase.storage
-        .from('resumes')
+        .from("resumes")
         .getPublicUrl(filePath);
 
     if (!publicUrlData?.publicUrl) {
-        throw new Error('Failed to generate resume public URL');
+        throw new Error("Failed to generate resume public URL");
     }
 
     return publicUrlData.publicUrl;
@@ -71,9 +82,10 @@ export const uploadApplicantResume = async ({
 
 
 
+
 export const getApplicantProfile = async (userId: string) => {
     const { data, error } = await supabase
-        .from('applicant_profiles') // ✅
+        .from('applicant_profiles')
         .select('*')
         .eq('id', userId)
         .single();
@@ -83,13 +95,13 @@ export const getApplicantProfile = async (userId: string) => {
 };
 
 export const updateApplicantProfile = async (
-    userId: string,
+    profileId: string,
     updates: Partial<CreateProfileData>
 ) => {
     const { data, error } = await supabase
         .from('applicant_profiles')
         .update(updates)
-        .eq('id', userId)
+        .eq('id', profileId)
         .select()
         .single();
 
