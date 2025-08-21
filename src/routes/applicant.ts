@@ -3,11 +3,12 @@ import {
     createApplicantProfileHandler,
     deleteApplicantProfileHandler,
     readApplicantProfile,
+    submitApplicantPhoto,
     submitApplicantProfile,
     updateApplicantProfileHandler
 } from '../controllers/applicantController';
 import { authMiddleware } from '../middlewares/authMiddleware';
-import { upload } from '../middlewares/upload';
+import { upload, uploadPhoto } from '../middlewares/upload';
 
 
 const router = express.Router();
@@ -22,7 +23,12 @@ router.post('/profile/upload', authMiddleware, upload.single('resume'), submitAp
 router.get('/profile', authMiddleware, readApplicantProfile);
 router.put('/profile', authMiddleware, updateApplicantProfileHandler);
 router.delete('/profile', authMiddleware, deleteApplicantProfileHandler);
-
+router.post(
+    '/profile/photo',
+    authMiddleware,
+    uploadPhoto.single('photo'),
+    submitApplicantPhoto
+);
 
 
 

@@ -15,5 +15,16 @@ const fileFilter = (
     }
     cb(null, true);
 };
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 
+const imageFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+    if (ALLOWED_IMAGE_TYPES.has(file.mimetype)) return cb(null, true);
+    return cb(new Error('Only JPEG, PNG, or WEBP images are allowed'));
+};
+
+export const uploadPhoto = multer({
+    storage,                       // <- same memory storage
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: imageFilter,
+});
 export const upload = multer({ storage, fileFilter });
