@@ -517,7 +517,7 @@ export const submitApplicantPhoto = async (req: Request, res: Response) => {
         const fileName = `${firstName}-${lastName}-${timeStamp()}-${Math.random()
             .toString(36)
             .slice(-6)}.${ext}`;
-        const filePath = `profile_photos/${fileName}`;
+        const filePath = `profilephotos/${fileName}`;
 
         // Upload to bucket "displaypictures"
         const { error: uploadErr } = await supabase.storage
