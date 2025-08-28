@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+    changePassword,
     createApplicantProfileHandler,
     deleteApplicantProfileHandler,
     readApplicantProfile,
@@ -29,6 +30,8 @@ router.post(
     uploadPhoto.single('photo'),
     submitApplicantPhoto
 );
+
+router.post("/profile/change-password", authMiddleware, changePassword);
 
 
 

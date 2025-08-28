@@ -115,6 +115,10 @@ export const deleteApplicantProfile = async (userId: string) => {
         .delete()
         .eq('id', userId);
 
+    await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId)
     if (error) throw error;
     return { message: 'Profile deleted successfully' };
 };

@@ -6,7 +6,7 @@ import {
     deleteApplicantProfile,
     getApplicantProfile,
     updateApplicantProfile,
-    uploadApplicantResume
+    uploadApplicantResume,
 } from '../services/applicantService';
 /**
  * @swagger
@@ -48,40 +48,7 @@ import {
  *       500:
  *         description: Upload failed or server error
  */
-// export const submitApplicantProfile = async (req: Request, res: Response) => {
-//     try {
-//         const userId = req.user?.id;
-//         if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-//         const resume = req.file;
-//         if (!resume) {
-//             return res.status(400).json({ message: 'Resume file is required (PDF).' });
-//         }
-
-//         // ✅ Fetch existing profile
-//         const profile = await getApplicantProfile(userId);
-
-//         // ✅ Upload using profile info
-//         const resumeUrl = await uploadApplicantResume({
-//             userId,
-//             profileId: profile.id, // fetched from DB
-//             resumeFile: resume,
-//             firstName: profile.first_name,
-//             lastName: profile.last_name
-//         });
-
-//         // ✅ Update resume_url in DB
-//         const updatedProfile = await updateApplicantProfile(userId, { resume_url: resumeUrl });
-
-//         res.status(200).json({
-//             message: 'Resume uploaded and profile updated successfully',
-//             resume_url: resumeUrl,
-//             profile: updatedProfile
-//         });
-//     } catch (error: any) {
-//         res.status(500).json({ message: error.message || 'Something went wrong' });
-//     }
-// };
 export const submitApplicantProfile = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
@@ -145,6 +112,112 @@ const extractStoragePathFromPublicUrl = (publicUrl: string): string | null => {
         return decodeURIComponent(u.pathname.substring(idx + marker.length));
     } catch {
         return null;
+    }
+};
+
+
+/**
+ * @swagger
+ * /api/applicant/profile/change-password:
+ *   post:
+ *     summary: Change password for the authenticated user
+ *     description: >
+ *       Requires a valid Bearer token. Verifies the current password, validates the new password,
+ *       and updates the stored hash. Updates `updated_at`.
+ *     tags: [Applicant]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: oldSecret123
+ *               newPassword:
+ *                 type: string
+ *                 example: NewStrongPass!234
+ *               confirmPassword:
+ *                 type: string
+ *                 example: NewStrongPass!234
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Password updated successfully
+ *       400:
+ *         description: Bad request (validation errors)
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Profile not found
+ *       500:
+ *         description: Server error
+ */
+export const changePassword = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.id as string | undefined; // you already set this in auth middleware
+        if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+        const { currentPassword, newPassword, confirmPassword } = req.body || {};
+
+        // basic validation
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({ message: "All fields are required." });
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: "New passwords do not match." });
+        }
+        // Optional: enforce strength
+        if (newPassword.length < 8) {
+            return res.status(400).json({ message: "New password must be at least 8 characters." });
+        }
+
+        // fetch user row
+        const { data: profile, error: fetchErr } = await supabase
+            .from("profiles")
+            .select("user_id, email, password")
+            .eq("user_id", userId)
+            .single();
+
+        if (fetchErr || !profile) {
+            return res.status(404).json({ message: "Profile not found." });
+        }
+
+        // verify current password
+        let isMatch = currentPassword === profile.password ? true : false;
+        if (!isMatch) {
+            return res.status(400).json({ message: "Current password is incorrect." });
+        }
+
+        // hash & update
+
+        const { error: updateErr } = await supabase
+            .from("profiles")
+            .update({ password: newPassword, updated_at: new Date().toISOString() })
+            .eq("user_id", userId);
+
+        if (updateErr) {
+            return res.status(500).json({ message: "Failed to update password." });
+        }
+
+        return res.status(200).json({ message: "Password updated successfully" });
+    } catch (err: any) {
+        console.error("changePassword error:", err);
+        return res.status(500).json({ message: err?.message || "Something went wrong" });
     }
 };
 
