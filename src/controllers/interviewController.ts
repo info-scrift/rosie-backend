@@ -6,7 +6,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 
 export const generateQuestions = async (req: Request, res: Response) => {
-  
+
   try {
     const { resumeText, jobDescription } = req.body;
 
@@ -29,7 +29,7 @@ export const generateQuestions = async (req: Request, res: Response) => {
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama3-70b-8192",
+        model: "llama-3.1-8b-instant",
         messages: [
           {
             role: "system",
@@ -53,7 +53,7 @@ export const generateQuestions = async (req: Request, res: Response) => {
     const content = response.data.choices[0]?.message?.content ?? "";
     const extracted = content
       .split(/\n(?=\d+\.)/)
-      .map((line:any) => line.trim())
+      .map((line: any) => line.trim())
       .filter(Boolean);
 
     res.json({
@@ -61,7 +61,7 @@ export const generateQuestions = async (req: Request, res: Response) => {
       questions: extracted
     });
 
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("❌ Error generating questions:", error.response?.data || error.message);
     res.status(500).json({
       success: false,
@@ -71,7 +71,7 @@ export const generateQuestions = async (req: Request, res: Response) => {
   }
 };
 
-    export const evaluateInterview = async (req: Request, res: Response) => {
+export const evaluateInterview = async (req: Request, res: Response) => {
 
   try {
     const { questions, answers } = req.body;
@@ -91,7 +91,7 @@ export const generateQuestions = async (req: Request, res: Response) => {
     }
 
     const QnA = questions.map((q, i) => `Q: ${q}\nA: ${answers[i] || "(no answer)"}`).join("\n\n");
-    
+
     const prompt = `Evaluate this candidate based on their answers to the interview questions below. Hey if there are few grammatical mistakes ignore them and assume the correct words yourself and also keep a light hand Provide only:1. A score out of 100 2. A brief summary of their overall performance.${QnA}`;
 
     const response = await axios.post(
@@ -124,7 +124,7 @@ export const generateQuestions = async (req: Request, res: Response) => {
       evaluation: evaluation
     });
 
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("❌ Evaluation Error:", error.response?.data || error.message);
     res.status(500).json({
       success: false,
