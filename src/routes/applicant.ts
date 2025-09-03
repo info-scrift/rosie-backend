@@ -3,6 +3,7 @@ import {
     changePassword,
     createApplicantProfileHandler,
     deleteApplicantProfileHandler,
+    ensureApplicantProfile,
     readApplicantProfile,
     submitApplicantPhoto,
     submitApplicantProfile,
@@ -30,6 +31,7 @@ router.post(
     uploadPhoto.single('photo'),
     submitApplicantPhoto
 );
+router.post("/profile/ensure", authMiddleware, ensureApplicantProfile);
 
 router.post("/profile/change-password", authMiddleware, changePassword);
 

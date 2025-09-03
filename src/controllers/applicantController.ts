@@ -351,7 +351,12 @@ export const readApplicantProfile = async (req: Request, res: Response) => {
     console.log(userId)
 
     try {
+
         const profile = await getApplicantProfile(userId);
+        if (!profile) {
+            // ✅ Profile missing — let frontend decide to create
+            res.status(200).json({ profile: null, message: "No profile exists yet" });
+        }
         res.status(200).json({ profile });
     } catch (error: any) {
         res.status(404).json({ message: error.message || 'Profile not found' });
@@ -632,6 +637,116 @@ export const submitApplicantPhoto = async (req: Request, res: Response) => {
         });
     } catch (err: any) {
         console.error("submitApplicantPhoto error:", err);
+        return res.status(500).json({ message: err?.message || "Something went wrong" });
+    }
+};
+
+
+
+/**
+ * @swagger
+ * /api/applicant/profile/ensure:
+ *   post:
+ *     summary: Ensure applicant profile exists
+ *     description: >
+ *       Creates a minimal applicant profile row if one does not already exist
+ *       for the authenticated user. If a profile already exists, it is returned
+ *       unchanged. The `user_id` is taken from the JWT. Useful for onboarding
+ *       flows to guarantee that a profile row exists before editing.
+ *     tags: [Applicant]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Existing profile returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "uuid-123"
+ *                     user_id:
+ *                       type: string
+ *                       example: "uuid-123"
+ *                     email:
+ *                       type: string
+ *                       example: "jane.doe@example.com"
+ *                     first_name:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "Jane"
+ *                     last_name:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "Doe"
+ *                     skills:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["React", "Node.js"]
+ *                     experience_years:
+ *                       type: integer
+ *                       example: 3
+ *       201:
+ *         description: New profile created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile:
+ *                   $ref: '#/components/schemas/ApplicantProfile'
+ *       401:
+ *         description: Unauthorized (no or invalid JWT)
+ *       500:
+ *         description: Server error while creating or fetching the profile
+ */
+
+// routes: POST /api/applicant/profile/ensure
+export const ensureApplicantProfile = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any)?.user?.id as string | undefined;
+        const email = (req as any)?.user?.email as string | undefined;
+        if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+        // Try by user_id
+        const { data: existing, error: selErr } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", userId)
+            .single();
+
+        if (!selErr && existing) {
+            return res.status(200).json({ profile: existing });
+        }
+
+        // Create the minimal row
+        const { data: inserted, error: insErr } = await supabase
+            .from("applicant_profiles")
+            .insert({
+                user_id: userId,
+                email: email ?? null,
+                first_name: null,
+                last_name: null,
+                skills: [],
+                experience_years: 0,
+            })
+            .select("*")
+            .single();
+
+        if (insErr) {
+            console.error("ensure insert error:", insErr.message);
+            return res.status(500).json({ message: "Failed to create applicant profile." });
+        }
+
+        return res.status(201).json({ profile: inserted });
+    } catch (err: any) {
+        console.error("ensureApplicantProfile error:", err);
         return res.status(500).json({ message: err?.message || "Something went wrong" });
     }
 };
