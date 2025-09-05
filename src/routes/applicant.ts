@@ -1,7 +1,7 @@
 import express from 'express';
 import {
     changePassword,
-    createApplicantProfileHandler,
+    createApplicantProfileJson,
     deleteApplicantProfileHandler,
     ensureApplicantProfile,
     readApplicantProfile,
@@ -18,7 +18,8 @@ router.post(
     '/profile',
     authMiddleware,
     upload.single('resume'),
-    createApplicantProfileHandler
+    // createApplicantProfileHandler
+    createApplicantProfileJson
 );
 router.post('/profile/upload', authMiddleware, upload.single('resume'), submitApplicantProfile);
 // router.post('/profile', authMiddleware, createApplicantProfileHandler);
