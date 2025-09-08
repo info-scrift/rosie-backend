@@ -190,7 +190,7 @@ export const signupUser = async (req: Request, res: Response) => {
 
     if (!result.session) {
       return res.status(201).json({
-        message: 'Signup successful. Please check your email to verify your account.',
+        message: 'Signup successful.',
         email: result.user?.email,
         requires_email_verification: true
       });
@@ -263,16 +263,22 @@ export const login = async (req: Request, res: Response) => {
       return res.status(500).json({ message: 'No token returned from Supabase.' });
     }
 
-
+    var loginrole = loginResult.user.role;
+    let redirecturl = getOriginUrl();
+    if (loginrole == 'applicant') {
+      redirecturl += '/jobs'
+    }
+    else {
+      redirecturl += '/companydashboard'
+    }
     // Optionally: redirect URL (return instead of redirect directly)
-    const frontendUrl = getOriginUrl();
 
     res.status(200).json({
       message: 'Login successful',
       access_token: session.access_token,
       refresh_token: session.refresh_token,
       user,
-      redirect: `${frontendUrl}`
+      redirect: `${redirecturl}`
     });
     console.log(user)
   } catch (error: any) {
