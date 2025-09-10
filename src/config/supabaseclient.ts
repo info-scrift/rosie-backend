@@ -25,7 +25,9 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 export const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
 
-const supabaseAdmin = createClient(
+export const supabaseAdmin = createClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! // Must be the secret key
+    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Must be the secret key
+    { auth: { autoRefreshToken: false, persistSession: false } }
+
 );

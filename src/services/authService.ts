@@ -1,4 +1,4 @@
-import { supabase, supabaseAuth } from '../config/supabaseclient';
+import { supabase, supabaseAdmin, supabaseAuth } from '../config/supabaseclient';
 import { CreateProfileData } from '../models/Profile';
 import { LoginCredentials } from '../models/User';
 
@@ -79,46 +79,36 @@ export const registerCompanyService = async (
     companyProfile
   };
 };
+
 export const signupService = async (
   email: string,
   password: string,
   role: string
 ): Promise<SignupResponse> => {
+  // 1) Create auth user
   const { data, error } = await supabaseAuth.auth.signUp({ email, password });
+  if (error) throw error;
 
-  if (error) {
-    console.error('Supabase Auth Error:', error);
-    throw error;
-  }
-
+  // 2) Ensure a profile row (use the SERVICE ROLE client to bypass RLS)
   if (data.user) {
     const profileData: CreateProfileData = {
       user_id: data.user.id,
       email: data.user.email!,
-      role
+      role,
     };
 
-    let { error: profileError } = await supabase
-      .from('profiles')
-      .insert([profileData]);
+    // No "returning" in v2; pass an array and onConflict key
+    const { error: upsertErr } = await supabaseAdmin
+      .from("profiles")
+      .upsert([profileData], { onConflict: "user_id" }); // add .select() if you need the row back
 
-    if (profileError) {
-      console.log('Profile insert failed, trying to update:', profileError.message);
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('user_id', data.user.id);
-
-      if (updateError) {
-        console.error('Failed to update profile:', updateError);
-      }
-    }
+    if (upsertErr) throw upsertErr;
   }
 
+  // 3) Return what Supabase returned
   return {
     user: data.user,
-    session: data.session
+    session: data.session,
   };
 };
 
